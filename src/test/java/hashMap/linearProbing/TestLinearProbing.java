@@ -1,5 +1,6 @@
 package hashMap.linearProbing;
 
+import org.antcamarasa.map.Entry;
 import org.antcamarasa.map.hashMap.linearProbing.LinearProbing;
 import org.antcamarasa.set.MySet;
 import org.junit.jupiter.api.Assertions;
@@ -73,19 +74,55 @@ public class TestLinearProbing {
         Assertions.assertEquals(4, myHashMap.getSize());
     }
 
-    // 5. Test Iterator
+    // 5. Test keys Iterator
     @Test
-    public void testIterators(){
+    public void testKeysIterators(){
         myHashMap.put("Antoine", 10);
         myHashMap.put("Hervet", 40);
         myHashMap.put("Jacob", 13);
 
-        LinearProbing.MyKeySet myKeySet = myHashMap.getKeySet();
-        Iterator<String> it = myKeySet.iterator();
+        LinearProbing.MyKeysView myKeysView = myHashMap.getKeySet();
+        Iterator<String> it = myKeysView.iterator();
 
         while(it.hasNext()){
             String next = it.next();
             System.out.println(next);
+        }
+    }
+
+    // 6. Test values Iterator
+    @Test
+    public void testValuesIterator(){
+        myHashMap.put("Antoine", 10);
+        myHashMap.put("Leo", 15);
+        myHashMap.put("Antoinea", 22);
+        myHashMap.put("Enzo", 35);
+
+        LinearProbing.ValuesView valuesView = myHashMap.new ValuesView();
+        Iterator<Integer> it = valuesView.iterator();
+        while (it.hasNext()){
+            int value = it.next();
+            System.out.println("Value : " + value);
+        }
+    }
+
+    // 7. Test Entry Iterator
+    @Test
+    public void testEntryIterator(){
+        myHashMap.put("Antoine", 12);
+        myHashMap.put("Fred", 44);
+        myHashMap.put("Alfonse", 17);
+        myHashMap.put("Mira", 7);
+
+        MySet<Entry<String, Integer>> entries = myHashMap.new MyEntryView();
+        Iterator<Entry<String, Integer>> it = entries.iterator();
+
+        while(it.hasNext()){
+            System.out.println("**********************");
+            Entry<String, Integer> entry = it.next();
+            System.out.println("Key :" + entry.key());
+            System.out.println("Value : " + entry.value());
+            System.out.println();
         }
     }
 }

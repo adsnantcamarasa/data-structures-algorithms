@@ -1,7 +1,10 @@
 package org.antcamarasa.map.hashMap.linearProbing;
 
+import org.antcamarasa.collection.MyCollection;
+import org.antcamarasa.map.Entry;
 import org.antcamarasa.set.MySet;
 
+import javax.sound.sampled.Line;
 import java.util.*;
 import java.util.function.Function;
 
@@ -100,10 +103,13 @@ public class LinearProbing<K, V> {
             return oldValue;
         });
     }
+
     public boolean containsKey(K key){
         V searchValue = findHelper(key, (idx) -> bucket[idx].value);
         return searchValue != null;
     }
+    public boolean containsValue(V value){return true;}
+
 
     private V findHelper(K key, Function<Integer, V> myFunction){
         int index = myCompressionFunction(myHashFunction(key));
@@ -130,7 +136,8 @@ public class LinearProbing<K, V> {
     // 2. values()   - List all values
     // 3. entrySet() - List all key value Pair
 
-    public class MyKeySet implements MySet<K>{
+    // 1. keySet()   - List all key - Elle doit renvoyer une vue.
+    public class MyKeysView implements MySet<K>{
         @Override
         public boolean add(K k) {
             return false;
@@ -138,7 +145,7 @@ public class LinearProbing<K, V> {
 
         @Override
         public boolean remove(K k) {
-            return false;
+            return LinearProbing.this.remove(k) != null;
         }
 
         @Override
@@ -161,6 +168,164 @@ public class LinearProbing<K, V> {
             return new MyCustomKeyIterator();
         }
     }
+    public MySet<K> keySet(){
+        return new MyKeysView();
+    }
+
+    // 2. values()   - List all values
+    public class ValuesView implements MyCollection<V>{
+        @Override
+        public int size(){
+            return LinearProbing.this.size;
+        }
+
+        @Override
+        public boolean isEmpty(){
+            return LinearProbing.this.size == 0;
+        }
+
+        @Override
+        public void add(V v){
+            throw new IllegalArgumentException("Cannot add element in view");
+        }
+
+        @Override
+        public boolean contains(V v){
+            // Not implemented
+            return false;
+        }
+
+        @Override
+        public boolean remove(V v){
+            // Not implemented
+            return false;
+        }
+
+        @Override
+        public Iterator<V> iterator(){
+            return new MyValuesIterator();
+        }
+    }
+    public MyCollection<V> values(){
+        return new ValuesView();
+    }
+
+    // 3. entrySet() - List all key value Pair
+    public class MyEntryView implements MySet<Entry<K, V>> {
+        @Override
+        public boolean add(Entry<K, V> entry){
+            throw new IllegalArgumentException("Cannot add element to a view");
+        }
+
+        @Override
+        public boolean remove(Entry<K, V> entry){
+            throw new IllegalArgumentException("Cannot remove from a view");
+        }
+
+        @Override
+        public boolean contains(Entry<K, V> entry){
+            return LinearProbing.this.containsKey(entry.key()) && LinearProbing.this.containsValue(entry.value());
+        }
+
+        @Override
+        public int size(){
+            return LinearProbing.this.size;
+        }
+
+        @Override
+        public boolean isEmpty(){
+            return LinearProbing.this.size == 0;
+        }
+
+        public Iterator<Entry<K, V>> iterator(){
+            return new MyEntryIterator();
+        }
+    }
+    public MySet<Entry<K, V>> entry(){return new MyEntryView();}
+
+
+    // 4. On methode for keySet and entrySet
+
+    /**
+     *     boolean add(E e);
+     *     boolean remove(E e);
+     *     boolean contains(E e);
+     *
+     *     int size();
+     *     boolean isEmpty();
+     */
+    public class SetView implements MySet<Entry<K, V>>{
+        // Je vais établir une fonction qui sera utilisé pour ce que je sougaite donc, soit une K soit une Entry K, V
+        // Deja j'aimerais avoir une comprehension clair, des argument passé en add.
+        // en gros je lui passe soit une key est une valeur et je crée un entry, soit je lui passe une entry directement et je l'ajoute ?
+
+        public boolean add(K k, V v){
+            throw new RuntimeException("Cannot add in view");
+        }
+
+        public boolean addOtherWay(K k, V v){
+            throw new RuntimeException("Cannot add in view");
+        }
+
+        public boolean remove(Entry<K, V> entry){
+            throw new RuntimeException("Cannot remove in a view");
+        }
+
+        public boolean contain(Entry<K, V> entry){
+            return LinearProbing.this.containsKey(entry.key()) && LinearProbing.this.containsValue(entry.value());
+        }
+
+        public boolean containOtherWay(K k, V v){
+            return LinearProbing.this.containsKey(k) && LinearProbing.this.containsValue(v);
+        }
+
+        public int size(){
+            return LinearProbing.this.size;
+        }
+
+        public boolean isEmpty(){
+            return size() == 0;
+        }
+
+        // Il faudrait un moyen pour créer un sur Type qui peux soit être K spot Entry<K, V> est-ce possible en java ?
+        public Iterator<Entry<K, V>> iterator(){
+            return new GenericIterator("fonction a passer");
+        }
+
+    }
+
+    // Pour rendre générique cette classe je dois pouvoir retourner soit une Entry<K, V> soit une K depuis depuis la méthode next
+    // La solution en tête passer en argument du constructeur une lambda qui me dis tu retourne K ou tu retourne Entry<K,V>
+    // toute la logique elle n'est pas a passer
+    public class GenericIterator() extends Iterator<Entry<K, V>> {
+        private int index;
+        private int counter;
+
+        public GenericIterator(String functionAPasser) {
+            this.index = 0;
+            this.counter = 0;
+        }
+
+
+        public boolean hasNext(){
+            return this.index < LinearProbing.this.size;
+        }
+
+        public Entry<K, V> next(){
+            while (this.index < LinearProbing.this.size){
+                if(LinearProbing.this.bucket[index] != null && LinearProbing.this.bucket[index] != LinearProbing.this.TOMBSTONE){
+                    this.counter++;
+                    // return la fonction à l'index et incrémente index.
+                }
+            }
+
+            throw new RuntimeException("End of iterator!");
+        }
+    }
+
+
+
+
 
     // _____________ ITERATOR __________
     private class MyKeyIterator implements Iterator<K>{
@@ -200,7 +365,6 @@ public class LinearProbing<K, V> {
             throw new RuntimeException("Impossible to find next element");
          }
     }
-
     private class MyCustomKeyIterator implements Iterator<K>{
         private Integer counter = null;
         private Integer nextIndex = null;
@@ -260,14 +424,81 @@ public class LinearProbing<K, V> {
             this.nextIndex++;
         }
     }
+    private class MyValuesIterator implements Iterator<V>{
+         int counter;
+         int index;
 
+         public MyValuesIterator(){
+             this.index = 0;
+             this.counter = 0;
+         }
+
+         @Override
+         public boolean hasNext(){
+             return this.index < LinearProbing.this.capacity;
+         }
+
+         @Override
+        public V next(){
+             while (index < LinearProbing.this.capacity){
+                 if(LinearProbing.this.bucket[index] != null && LinearProbing.this.bucket[index] != LinearProbing.this.TOMBSTONE){
+                     this.counter++;
+                     return LinearProbing.this.bucket[this.index++].value;
+                 }
+                 this.index++;
+             }
+             throw new IllegalArgumentException("End of iterator");
+         }
+
+    }
+
+    private class MyEntryIterator implements Iterator<Entry<K, V>>{
+        int index = 0;
+        int counter = 0;
+
+        public class MyEntryInstance implements Entry<K, V>{
+            K key;
+            V value;
+
+            public MyEntryInstance(K k, V v){
+                this.key = k;
+                this.value = v;
+            }
+
+            @Override
+            public K key(){
+                return this.key;
+            }
+
+            @Override
+            public V value(){
+                return this.value;
+            }
+        }
+
+        @Override
+        public boolean hasNext(){return this.counter < LinearProbing.this.size;}
+
+        @Override
+        public Entry<K, V> next(){
+            while (this.index < LinearProbing.this.bucket.length){
+                if(LinearProbing.this.bucket[index] != null && LinearProbing.this.bucket[index] != LinearProbing.this.TOMBSTONE){
+                    this.counter++;
+                    return new MyEntryInstance(LinearProbing.this.bucket[index].key, LinearProbing.this.bucket[index++].value);
+                }
+
+                this.index++;
+            }
+            return null;
+        }
+    }
 
     // __________________________________ Getter ___________________________________
     public int[] getDist(){return this.dist;}
     public int getSize(){return this.size;}
     public int getCapacity(){return this.capacity;}
-    public MyKeySet getKeySet(){
-        return new MyKeySet();
+    public MyKeysView getKeySet(){
+        return new MyKeysView();
     }
 
     // __________________________________ Helper ____________________________________
