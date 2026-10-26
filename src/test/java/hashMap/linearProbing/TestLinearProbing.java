@@ -1,7 +1,7 @@
 package hashMap.linearProbing;
 
-import org.antcamarasa.map.Entry;
-import org.antcamarasa.map.hashMap.linearProbing.LinearProbing;
+import org.antcamarasa.map.naive.hashMap.Entry;
+import org.antcamarasa.map.naive.hashMap.linearProbing.LinearProbing;
 import org.antcamarasa.set.MySet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -124,5 +124,12 @@ public class TestLinearProbing {
             System.out.println("Value : " + entry.value());
             System.out.println();
         }
+    }
+
+
+    @Test
+    public void testKeySet(){
+        myHashMap.put("Antoine", 10);
+
     }
 }

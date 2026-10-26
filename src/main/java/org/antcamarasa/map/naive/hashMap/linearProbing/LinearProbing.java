@@ -1,10 +1,9 @@
-package org.antcamarasa.map.hashMap.linearProbing;
+package org.antcamarasa.map.naive.hashMap.linearProbing;
 
 import org.antcamarasa.collection.MyCollection;
-import org.antcamarasa.map.Entry;
+import org.antcamarasa.map.naive.hashMap.Entry;
 import org.antcamarasa.set.MySet;
 
-import javax.sound.sampled.Line;
 import java.util.*;
 import java.util.function.Function;
 
@@ -33,12 +32,21 @@ public class LinearProbing<K, V> {
     }
 
 
+    // DECLARE VIEW
+    private SetView<K> setViewForKeySet;
+    private SetView<Entry<K, V>> setViewForEntry;
+    private ValuesView collectionViewForValue;
+    // todo collectionViewForValue;
 
 
     @SuppressWarnings("unchecked")
     public LinearProbing(){
         this.bucket = (MyNode<K, V>[]) new MyNode[capacity];
         this.dist   = new int[capacity];
+
+        this.setViewForKeySet = new SetView<>(node -> node.key);
+        this.setViewForEntry  = new SetView<>(node -> new EntryResponse(node.key, node.value));
+        this.collectionViewForValue  = new ValuesView();
     }
 
     public V put(K key, V value){
@@ -133,10 +141,15 @@ public class LinearProbing<K, V> {
 
     // _________________________________ Inner class _______________________________
     // 1. keySet()   - List all key - Elle doit renvoyer une vue.
+    public MySet<K> keySet(){return this.setViewForKeySet; }
+
     // 2. values()   - List all values
+    public MySet<Entry<K, V>> entrySey(){return this.setViewForEntry; }
+
+
     // 3. entrySet() - List all key value Pair
 
-    // 1. keySet()   - List all key - Elle doit renvoyer une vue.
+
     public class MyKeysView implements MySet<K>{
         @Override
         public boolean add(K k) {
@@ -168,7 +181,7 @@ public class LinearProbing<K, V> {
             return new MyCustomKeyIterator();
         }
     }
-    public MySet<K> keySet(){
+    public MySet<K> keySetDeprecated(){
         return new MyKeysView();
     }
 
@@ -206,9 +219,7 @@ public class LinearProbing<K, V> {
             return new MyValuesIterator();
         }
     }
-    public MyCollection<V> values(){
-        return new ValuesView();
-    }
+
 
     // 3. entrySet() - List all key value Pair
     public class MyEntryView implements MySet<Entry<K, V>> {
@@ -241,7 +252,7 @@ public class LinearProbing<K, V> {
             return new MyEntryIterator();
         }
     }
-    public MySet<Entry<K, V>> entry(){return new MyEntryView();}
+    public MySet<Entry<K, V>> entrryDeprecated(){return new MyEntryView();}
 
 
     // 4. On methode for keySet and entrySet
@@ -254,42 +265,49 @@ public class LinearProbing<K, V> {
      *     int size();
      *     boolean isEmpty();
      */
-    public class SetView implements MySet<Entry<K, V>>{
-        // Je vais établir une fonction qui sera utilisé pour ce que je sougaite donc, soit une K soit une Entry K, V
-        // Deja j'aimerais avoir une comprehension clair, des argument passé en add.
-        // en gros je lui passe soit une key est une valeur et je crée un entry, soit je lui passe une entry directement et je l'ajoute ?
+    public class SetView<T> implements MySet<T>{
+        // Old way ; problème F n'est pas connu dans mon iterator
+        // donc au lien de déclarer le F dans setView, je le déclare dans ma classe tout en haut bien sur je pense qu'ile xiste d'autre moyen.
+        Function<LinearProbing.MyNode<K, V>, T> extractor;
 
-        public boolean add(K k, V v){
-            throw new RuntimeException("Cannot add in view");
+        public SetView(Function<LinearProbing.MyNode<K, V>, T> extractor){
+            this.extractor = extractor;
         }
 
-        public boolean addOtherWay(K k, V v){
-            throw new RuntimeException("Cannot add in view");
+        @Override
+        public boolean add(T t) {
+            throw new RuntimeException("Cannot add in a view");
         }
 
-        public boolean remove(Entry<K, V> entry){
-            throw new RuntimeException("Cannot remove in a view");
+        @Override
+        public boolean remove(T t) {
+            throw new RuntimeException("Cannot add in a view");
         }
 
-        public boolean contain(Entry<K, V> entry){
-            return LinearProbing.this.containsKey(entry.key()) && LinearProbing.this.containsValue(entry.value());
+        @Override
+        public boolean contains(T t) {
+            // ? wildCard je ne connais pas.
+            // Mon idée est celle la peut être fausse. a voir.
+            // une autre idée qui me vient en tête de dire T peux être soit K soit Entry est-ce possible ? a voir mais cela serait intéressant. en tout cas l'idée ma traversé l'esprit.
+            if(t instanceof Entry<?,?>){
+                return LinearProbing.this.containsKey((K) ((Entry<?, ?>) t).key()) && LinearProbing.this.containsValue((V)((Entry<?, ?>) t).value());
+            }
+            return LinearProbing.this.containsKey((K) t);
         }
 
-        public boolean containOtherWay(K k, V v){
-            return LinearProbing.this.containsKey(k) && LinearProbing.this.containsValue(v);
-        }
-
+        @Override
         public int size(){
             return LinearProbing.this.size;
         }
 
+        @Override
         public boolean isEmpty(){
             return size() == 0;
         }
 
         // Il faudrait un moyen pour créer un sur Type qui peux soit être K spot Entry<K, V> est-ce possible en java ?
-        public Iterator<Entry<K, V>> iterator(){
-            return new GenericIterator("fonction a passer");
+        public Iterator<T> iterator(){
+            return new GenericIterator<T>(extractor);
         }
 
     }
@@ -297,11 +315,13 @@ public class LinearProbing<K, V> {
     // Pour rendre générique cette classe je dois pouvoir retourner soit une Entry<K, V> soit une K depuis depuis la méthode next
     // La solution en tête passer en argument du constructeur une lambda qui me dis tu retourne K ou tu retourne Entry<K,V>
     // toute la logique elle n'est pas a passer
-    public class GenericIterator() extends Iterator<Entry<K, V>> {
+    public class GenericIterator<T> implements Iterator<T> {
+        private Function<LinearProbing.MyNode<K, V>, T> extractor;
         private int index;
         private int counter;
 
-        public GenericIterator(String functionAPasser) {
+        public GenericIterator(Function<LinearProbing.MyNode<K, V>, T> extractor){
+            this.extractor = extractor;
             this.index = 0;
             this.counter = 0;
         }
@@ -311,11 +331,11 @@ public class LinearProbing<K, V> {
             return this.index < LinearProbing.this.size;
         }
 
-        public Entry<K, V> next(){
+        public T next(){
             while (this.index < LinearProbing.this.size){
                 if(LinearProbing.this.bucket[index] != null && LinearProbing.this.bucket[index] != LinearProbing.this.TOMBSTONE){
                     this.counter++;
-                    // return la fonction à l'index et incrémente index.
+                    return extractor.apply(LinearProbing.this.bucket[this.index++]);
                 }
             }
 
@@ -324,8 +344,37 @@ public class LinearProbing<K, V> {
     }
 
 
+    // Implementation
+    public MySet<K> keySetSecond(){
+        return new SetView<K>(node -> node.key);
+    }
+
+    public MySet<Entry<K, V>> entrySetSecond(){
+        return new SetView<>((node) -> new EntryResponse(node.key, node.value));
+    }
+
+    public class EntryResponse implements Entry<K, V>{
+        // je suis obligé d'utiliser un custom class car un record est static et je ne peux lé déclarer au global.
+        // or,
+        K key;
+        V value;
+
+        public EntryResponse(K key, V value){
+            this.key = key;
+            this.value = value;
+        }
 
 
+        @Override
+        public K key(){
+            return this.key;
+        }
+
+        @Override
+        public V value() {
+            return this.value;
+        }
+    }
 
     // _____________ ITERATOR __________
     private class MyKeyIterator implements Iterator<K>{

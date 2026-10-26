@@ -1,4 +1,4 @@
-package org.antcamarasa.map;
+package org.antcamarasa.map.naive.hashMap;
 
 public interface Entry<K, V> {
     K key();
