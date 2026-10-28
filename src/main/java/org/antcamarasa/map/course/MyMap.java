@@ -10,6 +10,7 @@ public interface MyMap<K, V> {
     // Renvoie la valeur v associé à la clé K si une telle entrée existe; sinon null.
     V get(K k);
 
+
     // Si M ne possède pas d'entrée donct la clé est égale à K, alors ajoute l'entré et renvoie null;
     // sinon, remplace par v la valeur existante sur l'entrée dont la clé est égale à k et retourne l'ancienne v.
     V put(K k, V v);

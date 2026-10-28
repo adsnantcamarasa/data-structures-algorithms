@@ -1,7 +1,7 @@
 package hashMap.linearProbing;
 
-import org.antcamarasa.map.naive.hashMap.Entry;
-import org.antcamarasa.map.naive.hashMap.linearProbing.LinearProbing;
+import org.antcamarasa.map.naive.Entry;
+import org.antcamarasa.map.naive.linearProbing.LinearProbing;
 import org.antcamarasa.set.MySet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

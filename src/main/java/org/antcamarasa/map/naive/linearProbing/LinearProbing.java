@@ -1,7 +1,7 @@
-package org.antcamarasa.map.naive.hashMap.linearProbing;
+package org.antcamarasa.map.naive.linearProbing;
 
 import org.antcamarasa.collection.MyCollection;
-import org.antcamarasa.map.naive.hashMap.Entry;
+import org.antcamarasa.map.naive.Entry;
 import org.antcamarasa.set.MySet;
 
 import java.util.*;
